@@ -1,0 +1,213 @@
+// Prisma schema for Tarapith Haunted Travel Experience
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for admin and staff
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String
+  role          UserRole  @default(STAFF)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  assignedLeads Lead[]    @relation("AssignedStaff")
+  
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+// Travel packages
+model Package {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String   @db.Text
+  shortDesc    String?  @db.VarChar(300)
+  price        Int      // Base price in INR
+  duration     String   // e.g., "2 days / 1 night"
+  bestFor      String?  // e.g., "Couples, Small groups"
+  inclusions   String[] // Array of included items
+  exclusions   String[] // Array of excluded items
+  itinerary    Json?    // Detailed itinerary as JSON
+  images       String[] // Array of image URLs
+  featured     Boolean  @default(false)
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  leads        Lead[]
+  
+  @@map("packages")
+}
+
+// Destinations
+model Destination {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String   @db.Text
+  shortDesc    String?  @db.VarChar(300)
+  distance     String?  // e.g., "15 km from Tarapith"
+  travelTime   String?  // e.g., "~30 minutes"
+  highlights   String[] // Key attractions
+  images       String[]
+  isPrimary    Boolean  @default(false) // Is this Tarapith main?
+  isSide       Boolean  @default(true)  // Side destination
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@map("destinations")
+}
+
+// Add-ons for trip customization
+model AddOn {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int      // Additional price in INR
+  category    String   // e.g., "transport", "accommodation", "experience"
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("addons")
+}
+
+// Lead/Inquiry model
+model Lead {
+  id           String      @id @default(cuid())
+  name         String
+  email        String?
+  phone        String
+  travelDate   DateTime?
+  groupSize    Int         @default(1)
+  message      String?     @db.Text
+  source       String?     // e.g., "website", "whatsapp", "call"
+  
+  // Package reference
+  packageId    String?
+  package      Package?    @relation(fields: [packageId], references: [id])
+  
+  // Custom selections stored as JSON
+  customizations Json?     // hotel tier, transport, add-ons etc.
+  estimatedPrice Int?
+  
+  // Lead management
+  status       LeadStatus  @default(NEW)
+  notes        String?     @db.Text
+  assignedToId String?
+  assignedTo   User?       @relation("AssignedStaff", fields: [assignedToId], references: [id])
+  followUpDate DateTime?
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  @@map("leads")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONFIRMED
+  CLOSED
+  CANCELLED
+}
+
+// Testimonials
+model Testimonial {
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  rating      Int      @default(5) // 1-5 stars
+  content     String   @db.Text
+  image       String?  // Customer photo
+  tripDate    DateTime?
+  featured    Boolean  @default(false)
+  approved    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("testimonials")
+}
+
+// Gallery images
+model GalleryImage {
+  id          String   @id @default(cuid())
+  url         String
+  alt         String?
+  caption     String?
+  category    String?  // e.g., "mandir", "haunted", "hotel", "transport"
+  featured    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("gallery_images")
+}
+
+// FAQ items
+model FAQ {
+  id          String   @id @default(cuid())
+  question    String
+  answer      String   @db.Text
+  category    String?  // e.g., "booking", "safety", "general"
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("faqs")
+}
+
+// Site settings (single row)
+model SiteSettings {
+  id                String   @id @default("default")
+  siteName          String   @default("Tarapith Haunted Travel Experience")
+  tagline           String?
+  contactEmail      String?
+  contactPhone      String?
+  whatsappNumber    String?
+  address           String?  @db.Text
+  
+  // Social links
+  facebookUrl       String?
+  instagramUrl      String?
+  youtubeUrl        String?
+  
+  // Booking settings
+  depositEnabled    Boolean  @default(false)
+  depositPercent    Int      @default(30)
+  upiId             String?
+  razorpayEnabled   Boolean  @default(false)
+  razorpayKeyId     String?
+  
+  // Safety disclaimer
+  safetyDisclaimer  String?  @db.Text
+  
+  updatedAt         DateTime @updatedAt
+  
+  @@map("site_settings")
+}
