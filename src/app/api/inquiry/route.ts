@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       groupSize: data.groupSize,
       packageId: data.packageId || null,
       message: data.message ? sanitize(data.message) : null,
-      customizations: data.customizations || null,
+      customizations: data.customizations ? data.customizations : undefined,
       source: 'website',
     }
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
           const addOns = await prisma.addOn.findMany({
             where: { id: { in: data.customizations.addOns } }
           })
-          estimatedPrice += addOns.reduce((sum, addon) => sum + addon.price, 0) * (data.groupSize || 1)
+          estimatedPrice += addOns.reduce((sum: number, addon: { price: number }) => sum + addon.price, 0) * (data.groupSize || 1)
         }
       }
     }

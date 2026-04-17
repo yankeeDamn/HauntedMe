@@ -68,7 +68,20 @@ export async function POST(request: NextRequest) {
 
       // Generate CSV
       const headers = ['ID', 'Name', 'Email', 'Phone', 'Travel Date', 'Group Size', 'Package', 'Status', 'Estimated Price', 'Assigned To', 'Created At', 'Message']
-      const rows = leads.map(lead => [
+      const rows = leads.map((lead: {
+        id: string
+        name: string
+        email: string | null
+        phone: string
+        travelDate: Date | null
+        groupSize: number
+        package: { name: string } | null
+        status: string
+        estimatedPrice: number | null
+        assignedTo: { name: string | null } | null
+        createdAt: Date
+        message: string | null
+      }) => [
         lead.id,
         lead.name,
         lead.email || '',
